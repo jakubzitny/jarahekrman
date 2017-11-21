@@ -1,6 +1,6 @@
 import request from 'request'
 import cheerio from 'cheerio'
-import { List, Map } from 'immutable'
+import { List, Map, Range } from 'immutable'
 
 
 const serializeCookies = (cookies) => {
@@ -22,8 +22,8 @@ const signIn = () => {
    Referer: 'https://zdjc.cz/prihlaseni',
    method: 'POST',
    form: {
-    'j_username': 'd_rc@rocketmail.com',
-    'j_password': 'Q.k,t"NQ',
+    'j_username': 'name'
+    'j_password': 'email',
    }
   }
  
@@ -158,20 +158,64 @@ const reserveTickets = (sessionId, playId, ticketIds) => {
 
 let s = null
 
-signIn()
-  .then((sessionId) => {
-    s = sessionId
-    const playId = 2033
-    return getSeatIds(playId, sessionId)
-    // return {
-    //   'playId': [ 'sid1', 'sid2' ],
-    // }
-  })
-  .then((r) => {
-    console.log(r)
-  })
-  .catch((e) => {
-    console.error(e)
-  })
+// signIn()
+//   .then((sessionId) => {
+//     s = sessionId
+//     const playId = 2033
+//     return getSeatIds(playId, sessionId)
+//     // return {
+//     //   'playId': [ 'sid1', 'sid2' ],
+//     // }
+//   })
+//   .then((r) => {
+//     console.log(r)
+//   })
+//   .catch((e) => {
+//     console.error(e)
+//   })
 
+const log = (b) => {
+  const $ = cheerio.load(b)
+  console.log($('h1').text())
+  console.log('=============')
+}
 
+const err = (e) => {
+  console.error(e)
+}
+
+// const sid = 'ECD635633692D1603FAEE5624963E695'
+const sid = '803C23070C90C19BB8B5DA172160CDD6'
+const times = 5
+
+const config = {
+  // 2030: [ ],
+  2032: [ ],
+  2035: [ ],
+  2041: [ ],
+  2042: [ ]
+}
+
+// console.log('signing in')
+// signIn()
+
+Object.keys(config).forEach((playId) => {
+  // new Range(0, times).forEach(() => {
+  console.log('getting seat ids for ', playId)
+  getSeatIds(playId, sid)
+    .then((seats) => {
+      const realSeats = List(Object.keys(seats)).flatMap((rowId) => {
+        return seats[rowId] 
+      })
+      const takenSeats = realSeats.take(16)
+      console.log('taken: ', takenSeats)
+      
+      takenSeats.forEach((seatId) => {
+        new Range(0, times).forEach(() => {
+          reserveTickets(sid, playId, [ seatId ]).then(log).catch(err)
+        }) 
+      })
+    })
+    .catch(err)
+  // })
+})
