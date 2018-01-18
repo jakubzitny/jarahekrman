@@ -26,8 +26,6 @@ const signIn = () => {
     // 'j_password': 'za6WrmxChSyX',
     // 'j_username': 'vojtatranta',
     // 'j_password': '@=.ufivj',
-    // 'j_username': 'mzitny',
-    // 'j_password': 'asd123',
     'j_username': 'katerinamichovska',
     'j_password': 'i-s(Pxjk',
    }
