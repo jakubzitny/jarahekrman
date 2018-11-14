@@ -1,6 +1,6 @@
 import request from 'request'
 import cheerio from 'cheerio'
-import { List, Map, Range } from 'immutable'
+import { List, Map, OrderedMap, Range } from 'immutable'
 
 
 const serializeCookies = (cookies) => {
@@ -14,7 +14,7 @@ const defaultHeaders = {
 }
 
 
-const signIn = () => {
+const signIn = (name, password) => {
   const signInUrl = 'https://zdjc.cz/signInUser'
   const options = {
    url: signInUrl,
@@ -22,14 +22,8 @@ const signIn = () => {
    Referer: 'https://zdjc.cz/prihlaseni',
    method: 'POST',
    form: {
-    // 'j_username': 'gu@protonmail.ch',
-    // 'j_password': 'za6WrmxChSyX',
-    // 'j_username': 'vojtatranta',
-    // 'j_password': '@=.ufivj',
-    // 'j_username': 'mzitny',
-    // 'j_password': 'asd123',
-    'j_username': 'katerinamichovska',
-    'j_password': 'i-s(Pxjk',
+    'j_username': name,
+    'j_password': password,
    }
   }
 
@@ -68,78 +62,57 @@ const signIn = () => {
 
 // TODO: take from last (right side)
 // TODO: find ones that are close to each other
-const getInterestingSeatIds = (domString) => {
+const getInterestingSeatIds = (domString, row = 'back') => {
   const $ = cheerio.load(domString)
 
-  // const prioritySelectors = Map({
-  //   3: '#prizemi #rada3 .sedadlo-free',
-  //   4: '#prizemi #rada4 .sedadlo-free',
-  //   5: '#prizemi #rada5 .sedadlo-free',
-  //   6: '#prizemi #rada6 .sedadlo-free',
-  //   1: '#prizemi #rada1 .sedadlo-free',
-  //   2: '#prizemi #rada2 .sedadlo-free',
-  //   7: '#prizemi #rada7 .sedadlo-free',
-  //   8: '#prizemi #rada8 .sedadlo-free',
-  //   9: '#prizemi #rada9 .sedadlo-free',
-  //   10: '#prizemi #rada10 .sedadlo-free',
-  //   12: '#balkon #rada12 .sedadlo-free',
-  //   13: '#balkon #rada13 .sedadlo-free',
-  //   14: '#balkon #rada14 .sedadlo-free',
-  //   11: '#balkon #rada11 .sedadlo-free'
-  // })
-  //sedadlo-free
-  const prioritySelectors = Map({
-    3: '#prizemi #rada3 .sedadlo-free',
-    4: '#prizemi #rada4 .sedadlo-free',
-    5: '#prizemi #rada5 .sedadlo-free',
-    6: '#prizemi #rada6 .sedadlo-free',
-    1: '#prizemi #rada1 .sedadlo-free',
-    2: '#prizemi #rada2 .sedadlo-free',
-    7: '#prizemi #rada7 .sedadlo-free',
-    8: '#prizemi #rada8 .sedadlo-free',
-    9: '#prizemi #rada9 .sedadlo-free',
-    10: '#prizemi #rada10 .sedadlo-free',
-    12: '#balkon #rada12 .sedadlo-free',
-    13: '#balkon #rada13 .sedadlo-free',
-    14: '#balkon #rada14 .sedadlo-free',
-    11: '#balkon #rada11 .sedadlo-free'
-  })
+  const prioritySelectors = OrderedMap([
+    [ 3, '#prizemi #rada3 .sedadlo-free' ],
+    [ 4, '#prizemi #rada4 .sedadlo-free' ],
+    [ 5, '#prizemi #rada5 .sedadlo-free' ],
+    [ 6, '#prizemi #rada6 .sedadlo-free' ],
+    [ 1, '#prizemi #rada1 .sedadlo-free' ],
+    [ 2, '#prizemi #rada2 .sedadlo-free' ],
+    [ 7, '#prizemi #rada7 .sedadlo-free' ],
+    [ 8, '#prizemi #rada8 .sedadlo-free' ],
+    [ 9, '#prizemi #rada9 .sedadlo-free' ],
+    [ 10, '#prizemi #rada10 .sedadlo-free' ],
+    [ 12, '#balkon #rada12 .sedadlo-free' ],
+    [ 13, '#balkon #rada13 .sedadlo-free' ],
+    [ 14, '#balkon #rada14 .sedadlo-free' ],
+    [ 11, '#balkon #rada11 .sedadlo-free' ]
+  ])
 
-  const availableSeatIds = prioritySelectors.reduce((allSeatIds, selector, index) => {
+  console.log('Free seats in rows:')
+  const availableSeatIds = prioritySelectors.reduce((allSeatIds, selector, row) => {
     const seatDivs = $(selector)
 
     if (!seatDivs || !seatDivs.length) {
-      // return allSeatIds.set(index, List())
-      allSeatIds[index] = List()
-      return allSeatIds
+      return allSeatIds.set(row, List())
     }
 
     const seatIds = List(Object.keys(seatDivs)).flatMap((seatDivKey) => {
       const seatDiv = seatDivs[seatDivKey]
       if (!seatDiv.attribs) {
-        return []
+        return List()
       }
 
       const seatDivId = seatDiv.attribs.id
       const seatId = seatDivId.replace('sedadlo', '')
 
-      return [ seatId ]
+      return List([ seatId ])
     })
 
+    console.log(`${row} (${prioritySelectors.get(row)}):`, seatIds.join(','))
 
-    console.log(seatIds.join(','))
-
-    // return allSeatIds.set(index, seatIds)
-    allSeatIds[index] = seatIds
-    return allSeatIds
-  }, {})
+    return allSeatIds.set(row, List(seatIds))
+  }, OrderedMap())
 
 
   return availableSeatIds
 }
 
 
-const getSeatIds = (playId, sessionId) => {
+const getSeatIds = (playId, sessionId, row = 'back') => {
   const url = `https://zdjc.cz/rezervace/detail?id=${playId}`
   const headers = {
     'User-Agent': defaultHeaders['User-Agent'],
@@ -153,7 +126,7 @@ const getSeatIds = (playId, sessionId) => {
         return
       }
 
-      resolve(getInterestingSeatIds(body))
+      resolve(getInterestingSeatIds(body, row))
     })
   })
 }
@@ -207,7 +180,8 @@ const err = (e) => {
   console.error(e)
 }
 
-// const sid = 'ECD635633692D1603FAEE5624963E695'
+const currentSid = '803C23070C90C19BB8B5DA172160CDD6'
+const times = 5
 
 
 // console.log('signing in')
@@ -298,25 +272,38 @@ const configFebruary = {
 
 // signIn()
 
+const letsHekrmanIt = (plays, sessionId, options = { row: 'back', numberOfTakenSeats: 16, debug: false }) => {
+  Object.keys(plays).forEach((playId) => {
+    console.log('Getting seat ids for play:', playId)
 
-Object.keys(configFebruary).forEach((playId) => {
-  // new Range(0, times).forEach(() => {
-  console.log('getting seat ids for ', playId)
-  getSeatIds(playId, sid)
-    .then((seats) => {
-      console.log(seats)
-      const realSeats = List(Object.keys(seats)).flatMap((rowId) => {
-        return seats[rowId]
-      })
-      const takenSeats = realSeats.take(2)
-      console.log(playId, ':', realSeats.toArray(),)
+    getSeatIds(playId, sessionId, options.row)
+      .then((seats) => {
+        const realSeats = seats.valueSeq().flatMap((seats) => {
+          return seats
+        })
 
-      takenSeats.forEach((seatId) => {
-        // new Range(0, times).forEach(() => {
-        reserveTickets(sid, playId, [ seatId ]).then(log).catch(err)
-        // })
+        const numberOfSeatsToTaken = options.numberOfTakenSeats || 16
+        const takenSeats = realSeats.take(numberOfSeatsToTaken)
+        console.log(`Taking seats(${numberOfSeatsToTaken}): `, takenSeats)
+        if (options.debug) {
+          console.log('Reservation cancelled in DEBUG (odbroukovat) mode!')
+          return
+        }
+
+        takenSeats.forEach((seatId) => {
+          new Range(0, times).forEach(() => {
+            reserveTickets(sessionId, playId, [ seatId ]).then(log).catch(err)
+          })
+        })
       })
-    })
-    .catch(err)
-  // })
-})
+      .catch(err)
+  })
+}
+
+
+export const signInOrder = async (login, password, plays, options) => {
+  const sessionId = await signIn(login, password)
+  return letsHekrmanIt(plays, sessionId, options)
+}
+
+export default letsHekrmanIt

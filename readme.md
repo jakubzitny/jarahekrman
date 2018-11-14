@@ -1,16 +1,12 @@
 # Divadlo Járy Hekrmana
 
-## Prosinec
+## Installation
+Run `yarn` in this repo and you should be good to go!
 
-- blaník 2032
-- vražda 2035
-- severný pól 1968
-- dlouhý široký krátkozraký 2036
-- ríš hudby 2038
-- hospoda na mýtince 2040
-- triedna kniha 2041
-- akt 2042
+## Usage
+Try: `yarn cli -h` to get help.
 
+Don't forget to specify params to cli such as: `--plays, --sid` without those nothing will happen :(.
 
 GET
 https://zdjc.cz/rezervace/vytvorit-rezervaci?id=2030&ids=571683,571682
