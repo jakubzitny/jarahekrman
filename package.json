@@ -4,10 +4,16 @@
   "main": "main.js",
   "author": "Jakub Žitný <jakubzitny@avocode.com> (https://github.com/jakubzitny)",
   "license": "MIT",
+  "scripts": {
+    "cli": "babel-node cli.js"
+  },
   "dependencies": {
+    "babel-plugin-syntax-async-functions": "^6.13.0",
+    "babel-preset-latest": "^6.24.1",
     "cheerio": "^1.0.0-rc.2",
     "immutable": "^3.8.2",
-    "request": "^2.83.0"
+    "request": "^2.83.0",
+    "yargs": "^11.0.0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
